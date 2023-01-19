@@ -147,7 +147,7 @@
     $('#logoutButton').on('click', function() {
         $.ajax({
             url: `/Api/Logout`,
-            success: location.reload()
+            success: () => { location.reload() }
         })
     })
 
