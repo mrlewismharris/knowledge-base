@@ -1,4 +1,4 @@
-A knowledge-base app with very (very) basic user authentication
+A knowledge-base app with very (very) basic user authentication (literally plaintext to DO NOT put any actuall passwords here)
 
 Requires nodejs
 
