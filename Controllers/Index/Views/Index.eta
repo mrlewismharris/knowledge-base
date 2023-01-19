@@ -1,0 +1,163 @@
+<% layout(`../../Layouts/_Layout.eta`, {
+    title: "Local Knowledge Base"
+}) %>
+
+<style>
+    p {
+        margin-bottom: 0px;
+    }
+
+    .collapsed-content {
+        max-height: 115px;
+        overflow: hidden;
+    }
+
+    .collapsed-content:after {
+        content: "";
+        position: absolute;
+        z-index: 1;
+        bottom: 0;
+        left: 0;
+        pointer-events: none;
+        background-image: linear-gradient(180deg, rgba(255,255,255,0) 0%, rgba(255,255,255,1) 100%);
+        width: 100%;
+        height: 35px;
+    }
+
+    .quill {
+        border: none!important;
+    }
+</style>
+
+<div id="ribbon">
+    <h3 class="d-inline-block">Knowledge Base<a class="d-inline btn btn-sm btn-primary ms-2" style="position:relative;top:-3px;" href="/Add">+ Add</a></h3>
+    <div class="d-inline-block float-end">
+        <button id="logoutButton" type="button" class="btn btn-sm btn-danger">Logout</button>
+    </div>
+</div>
+
+<input id="kbaseSearch" type="text" class="mt-4 form-control" placeholder="Search..." />
+
+<div class="d-inine-block mt-1">
+    <h6 class="mt-2 d-inline-block">Most Used Tags:</h6>
+    <div class="d-inline-block" id="tagList"></div>
+</div>
+
+<div id="searchResults" class="mt-2 mb-4"></div>
+
+<script>
+    var results
+    function getResults(searchTerm) {
+        $.ajax({
+            type: 'POST',
+            url: `/Api/Search`,
+            data: {
+                search: searchTerm ?? $('#kbaseSearch').val()
+            },
+            success: (data) => {
+                results = data
+                displayResults()
+            }
+        })
+    }
+
+    var searchTimeout
+    $('#kbaseSearch').on('keyup', function() {
+        clearTimeout(searchTimeout)
+        searchTimeout = setTimeout(function() {
+            getResults()
+        }, 250)
+    })
+
+    var quills = []
+
+    function displayResults() {
+        quills = []
+        if (results.length == 0) {
+            $('#searchResults').html(`<div class="alert alert-primary text-center">No Results Found</div>`)
+            return
+        }
+        $('#searchResults').html(results.map(r => `<div class="card p-3 my-2">
+            <h4>${r.title}</h4>
+            <p class="d-inline-block"><span style="position:relative; top: 2px;">${new Date(r['date-created']).toLocaleString('en-GB', { timeZone: 'GMT' })}</span>
+                ${r.tags.length == 0 ? "" : r.tags.split(" ").map(x => `<button type="button" class="tag-button btn btn-outline-secondary btn-sm me-1 py-0 px-1">${x}</button>`).join("")}
+                <button
+                type="button" class="kbDelete btn btn-outline-danger btn-sm d-inline-block py-0" data-id="${r.id}">Delete</button>
+            </p>
+            <div class="mt-2">
+                <div class="quill collapsed-content">${r.html}</div>
+                <div class="text-center">
+                    <button type="button" class="btn btn-sm btn-outline-secondary article-toggle mt-2">Show More</button>
+                </div>
+            </div>
+        </div>
+        `).join(''))
+        $('.quill').each(function() {
+            $(this).attr('id', 'quillxxxxx'.replace(/[xy]/g, function(c) {
+                var r = Math.random() * 16 | 0, v = c == 'x' ? r : (r & 0x3 | 0x8)
+                return v.toString(16)
+            }))
+            quills.push(new Quill('#' + $(this).attr('id'), {
+                readOnly: true,
+                modules: {
+                    toolbar: false
+                },
+                theme: 'snow'
+            }))
+        })
+    }
+
+    getResults('')
+
+    $('#searchResults').on('click', '.kbDelete', function(){
+        var id = $(this).data('id')
+        $.ajax({
+            type: 'POST',
+            url: `/Api/DeleteKnowledgeArticle`,
+            data: {
+                id: id
+            },
+            success: (data) => {
+                if (data == "success")
+                    getResults($('#kbaseSearch').val())
+            }
+        })
+    })
+
+    $.ajax({
+        url: `/Api/GetMostUsedTags`,
+        success: (data) => {
+            if (data.tags.length == 0) {
+                $('#tagList').append(`<button type="button" class="tag-button btn btn-secondary btn-sm me-1 py-0 px-1" disabled>No tags</button>`)
+                return
+            }
+            data.tags.forEach(tag => {
+                $('#tagList').append(`<button type="button" class="tag-button btn btn-secondary btn-sm me-1 py-0 px-1" data-tag="${tag.name}">${tag.name} (${tag.count})</button>`)
+            })
+            if (data.totalTags > data.tags.length)
+                $('#tagList').append(`<button type="button" class="tag-button btn btn-secondary btn-sm me-1 py-0 px-1" disabled>${data.totalTags - data.tags.length} more tags...</button>`)
+        }
+    })
+
+    $('#tagList, #searchResults').on('click', '.tag-button', function() {
+        $('#kbaseSearch').val($('#kbaseSearch').val() != "" ? `${$('#kbaseSearch').val()} ${$(this).data('tag')}` : $(this).data('tag'))
+        getResults()
+    })
+
+    $('#logoutButton').on('click', function() {
+        $.ajax({
+            url: `/Api/Logout`,
+            success: location.reload()
+        })
+    })
+
+    $('#searchResults').on('click', '.article-toggle', function() {
+        if ($(this).html() == 'Show More') {
+            $(this).html('Show Less')
+            $(this).parent().parent().find('.quill').removeClass('collapsed-content')
+        } else {
+            $(this).html('Show More')
+            $(this).parent().parent().find('.quill').addClass('collapsed-content')
+        }
+    })
+</script>

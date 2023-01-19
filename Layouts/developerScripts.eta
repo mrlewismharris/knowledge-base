@@ -1,0 +1,28 @@
+<script>
+    var lastRestartHash = ""
+    function ajaxCheckReload() {
+        var r = new XMLHttpRequest()
+        r.open("GET", "/Api/GetLastServerRestart", true)
+        r.onreadystatechange = function () {
+            if (r.readyState != 4 || r.status != 200)
+                return
+            var res = JSON.parse(r.response)
+            if (lastRestartHash == "") {
+                lastRestartHash = res.restartHash
+                return
+            }
+            if (lastRestartHash != res.restartHash) {
+                lastRestartHash = res.restartHash
+                location.reload()
+            }
+        }
+        r.send()
+    }
+
+    function loop() {
+        ajaxCheckReload()
+        setTimeout(loop, 50)
+    } loop()
+
+    console.log("%c [controller-router] hotreload is running...", 'color: #0f0')
+</script>

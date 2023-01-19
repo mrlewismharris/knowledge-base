@@ -1,0 +1,7 @@
+<link rel="stylesheet" href="/public/css/shared/bootstrap.min.css">
+<link rel="stylesheet" href="/public/css/shared/quill.snow.css">
+<link rel="stylesheet" href="/public/css/shared/global.css">
+<script src="/public/js/shared/jquery.js"></script>
+<script src="/public/js/shared/bootstrap.min.js"></script>
+<script src="/public/js/shared/quill.js"></script>
+<script src="/public/js/shared/global.js"></script>

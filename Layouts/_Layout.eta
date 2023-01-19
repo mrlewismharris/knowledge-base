@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title><%= it.title %></title>
+        <%~ includeFile(`globalHeader.eta`) %>
+    </head>
+    <body>
+        <div class="body">
+            <%~ it.body %>
+        </div>
+        <%~ includeFile(`globalFooter.eta`) %>
+        <% if (it.developer) { %>
+            <%~ includeFile(`developerScripts.eta`) %>
+        <% } %>
+    </body>
+</html>
