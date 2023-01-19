@@ -1,5 +1,6 @@
 const crypto = require('crypto')
 const fs = require('fs')
+const auth = require.main.require('./Utilities/Auth')
 
 module.exports = {
     GetServerData: (data) => {
@@ -9,10 +10,12 @@ module.exports = {
     },
     GetLastServerRestart: (data) => {
         if (data.serverData.environment != "dev")
-            return "400"
+            return
         return { restartHash: crypto.createHash('md5').update(data.serverData.initiateTime.toString()).digest('hex') }
     },
     CreateKnowledgeArticle: (data) => {
+        if (!auth.authenticate(data.req).success)
+            return
         data = Object.assign({}, data.req.body)
         if (data.title == '' || data.plainText == '')
             return "Title or plaintext cannot be empty."
@@ -37,6 +40,8 @@ module.exports = {
         return "success"
     },
     Search: (data) => {
+        if (!auth.authenticate(data.req).success)
+            return
         data = Object.assign({}, data.req.body)
         var search = data.search.toLowerCase()
         var db = JSON.parse(fs.readFileSync('kbase.json')).reverse()
@@ -69,6 +74,8 @@ module.exports = {
         return filtered.sort(x => x.strength).slice(0, 25)
     },
     DeleteKnowledgeArticle: (data) => {
+        if (!auth.authenticate(data.req).success)
+            return
         data = Object.assign({}, data.req.body)
         fs.readFile('kbase.json', function(err, file) {
             fs.writeFileSync('kbase.json', JSON.stringify(JSON.parse(file).filter(x => x.id != data.id), null, 2))
@@ -76,6 +83,8 @@ module.exports = {
         return "success"
     },
     GetMostUsedTags: (data) => {
+        if (!auth.authenticate(data.req).success)
+            return
         var tags = []
         var db = fs.readFileSync('kbase.json')
         json = JSON.parse(db)
@@ -127,6 +136,8 @@ module.exports = {
         }
     },
     Logout: (data) => {
+        if (!auth.authenticate(data.req).success)
+            return
         if (typeof data.req.headers.cookie == `undefined`)
           return { success: false, msg: "no cookie sent" }
         data = Object.fromEntries(data.req.headers.cookie.split(`; `).map(cookie => cookie.split("=")))
