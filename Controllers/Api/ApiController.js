@@ -85,21 +85,24 @@ module.exports = {
     GetMostUsedTags: (data) => {
         if (!auth.authenticate(data.req).success)
             return
-        var tags = []
+        var allTagStrings = []
         var db = fs.readFileSync('kbase.json')
         json = JSON.parse(db)
         json.forEach(article => {
             article.tags.split(" ").forEach(tag => {
-                if (tag.trim() != "")
-                    tags.push({
-                        name: tag,
-                        count: 1
-                    })
+                allTagStrings.push(tag)
             })
         })
+        var allTagObjects = []
+        allTagStrings.forEach(tag => {
+            if (allTagObjects.findIndex(x => x.name == tag) == -1)
+                allTagObjects.push({ name: tag, count: 1 })
+            else
+                allTagObjects[allTagObjects.findIndex(x => x.name == tag)].count++
+        })
         return {
-            totalTags: tags.length,
-            tags: tags.sort(x => x.count).slice(0, 50)
+            totalTags: allTagObjects.length,
+            tags: allTagObjects.sort(x => x.count).slice(0, 50)
         }
     },
     AttemptLogin: (data) => {
