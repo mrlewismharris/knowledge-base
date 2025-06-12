@@ -1,7 +1,7 @@
 const crypto = require('crypto')
-const fs = require('fs')
 const bcrypt = require('bcrypt')
 const auth = require.main.require('./Utilities/Auth')
+const db = require.main.require('./Utilities/Database').db
 
 module.exports = {
     GetServerData: (data) => {
@@ -20,11 +20,6 @@ module.exports = {
         data = Object.assign({}, data.req.body)
         if (data.title == '' || data.plainText == '')
             return "Title or plaintext cannot be empty."
-        
-        if (!fs.existsSync('kbase.json')) {
-            fs.writeFileSync('kbase.json', '[]')
-            console.log("kbase.json didn't exist, created it...")
-        }
 
         data['id'] = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
             var r = Math.random() * 16 | 0, v = c == 'x' ? r : (r & 0x3 | 0x8)
@@ -32,12 +27,12 @@ module.exports = {
         })
         data['date-created'] = new Date()
 
-        fs.readFile('kbase.json', function(err, file) {
-            var json = JSON.parse(file)
-            json.push(data)
-            fs.writeFileSync('kbase.json', JSON.stringify(json, null, 2))
-        })
-        
+        db.prepare(`INSERT INTO articles (id, title, html, plainText, tags, created)` +
+            ` VALUES (?, ?, ?, ?, ?, ?)`).run(
+                data.id, data.title, data.html, data.plainText, data.tags ?? '',
+                data['date-created'].toISOString()
+            )
+
         return "success"
     },
     Search: (data) => {
@@ -45,13 +40,13 @@ module.exports = {
             return
         data = Object.assign({}, data.req.body)
         var search = data.search.toLowerCase()
-        var db = JSON.parse(fs.readFileSync('kbase.json')).reverse()
+        var articles = db.prepare('SELECT * FROM articles ORDER BY created DESC').all()
         if (data.search == '')
-            return db
+            return articles
 
         var filtered = []
         search.split(" ").forEach(phrase => {
-            db.forEach(item => {
+            articles.forEach(item => {
                 var strength = 0
 
                 if (item.title.toLowerCase().includes(phrase))
@@ -78,20 +73,18 @@ module.exports = {
         if (!auth.authenticate(data.req).success)
             return
         data = Object.assign({}, data.req.body)
-        fs.readFile('kbase.json', function(err, file) {
-            fs.writeFileSync('kbase.json', JSON.stringify(JSON.parse(file).filter(x => x.id != data.id), null, 2))
-        })
+        db.prepare('DELETE FROM articles WHERE id = ?').run(data.id)
         return "success"
     },
     GetMostUsedTags: (data) => {
         if (!auth.authenticate(data.req).success)
             return
         var allTagStrings = []
-        var db = fs.readFileSync('kbase.json')
-        json = JSON.parse(db)
-        json.forEach(article => {
-            article.tags.split(" ").forEach(tag => {
-                allTagStrings.push(tag)
+        var rows = db.prepare('SELECT tags FROM articles').all()
+        rows.forEach(article => {
+            (article.tags || '').split(' ').forEach(tag => {
+                if (tag)
+                    allTagStrings.push(tag)
             })
         })
         var allTagObjects = []
@@ -112,24 +105,19 @@ module.exports = {
         data = Object.assign({}, data.req.body)
         if (!data.username || !data.password)
             return { success: false, msg: 'username or password missing' }
-        var creds = JSON.parse(fs.readFileSync('login_info.json'))
-        if (creds.find(x => x.username == data.username))
+
+        if (db.prepare('SELECT id FROM users WHERE username = ?').get(data.username))
             return { success: false, msg: 'user already exists' }
 
         const hashedPassword = bcrypt.hashSync(data.password, 10)
-        var newUser = {
-            id: 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
-                var r = Math.random() * 16 | 0, v = c == 'x' ? r : (r & 0x3 | 0x8)
-                return v.toString(16)
-            }),
-            username: data.username,
-            password: hashedPassword,
-            key: ''
-        }
-        creds.push(newUser)
-        fs.writeFileSync('login_info.json', JSON.stringify(creds, null, 2))
+        const id = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+            var r = Math.random() * 16 | 0, v = c == 'x' ? r : (r & 0x3 | 0x8)
+            return v.toString(16)
+        })
+        db.prepare('INSERT INTO users (id, username, password, key) VALUES (?, ?, ?, ?)')
+          .run(id, data.username, hashedPassword, '')
         console.log(`User "${data.username}" created.`)
-        return { success: true, id: newUser.id }
+        return { success: true, id: id }
     },
     AttemptLogin: (data) => {
         data = Object.assign({}, data.req.body)
@@ -138,25 +126,18 @@ module.exports = {
             return { success: false, msg: 'login unsuccessful: username was undefined' }
         if (typeof (data['password']) == 'undefined')
             return { success: false, msg: 'login unsuccessful: password was undefined' }
-        //get file
-        var creds = JSON.parse(fs.readFileSync('login_info.json'))
-        //validate user exists
-        if (creds.findIndex(user => user['username'] == data['username']) == -1)
+        const userCreds = db.prepare('SELECT * FROM users WHERE username = ?').get(data['username'])
+        if (!userCreds)
             return { success: false, msg: 'login unsuccessful: wrong username or password' }
-        var userCreds = creds.find(x => x.username == data['username'])
-        //auth
         if (!bcrypt.compareSync(data['password'], userCreds['password']))
             return { success: false, msg: 'login unsuccessful: wrong username or password' }
-        
+
         var newKey = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
             var r = Math.random() * 16 | 0, v = c == 'x' ? r : (r & 0x3 | 0x8)
             return v.toString(16)
         })
 
-        userCreds['key'] = newKey
-        creds.splice(creds.findIndex(x => x.username == data['username']), 1)
-        creds.push(userCreds)
-        fs.writeFileSync('login_info.json', JSON.stringify(creds, null, 2))
+        db.prepare('UPDATE users SET key = ? WHERE id = ?').run(newKey, userCreds.id)
         console.log(`User "${userCreds.username}" logged in successfully.`)
         return {
             success: true,
@@ -184,16 +165,10 @@ module.exports = {
             return "logout unsuccessful: key was undefined"
         if (!data.hasOwnProperty("id"))
             return "logout unsuccessful: id was undefined"
-        var creds = JSON.parse(fs.readFileSync('login_info.json'))
-        if (creds.findIndex(user => user['id'] == data['id']) == -1)
+        const userData = db.prepare('SELECT * FROM users WHERE id = ?').get(data['id'])
+        if (!userData || userData.key != data['key'])
             return "logout unsuccessful: wrong id or key"
-        var userData = creds.find(user => user['id'] == data['id'])
-        if (userData['key'] != data['key'])
-            return "logout unsuccessful: wrong id or key"
-        userData['key'] = ''
-        creds.splice(creds.indexOf(x => x.id == data['id']), 1)
-        creds.push(userData)
-        fs.writeFileSync('login_info.json', JSON.stringify(creds, null, 2))
+        db.prepare('UPDATE users SET key = "" WHERE id = ?').run(data['id'])
         return "success"
     }
 }
