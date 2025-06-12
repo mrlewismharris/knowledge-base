@@ -11,7 +11,7 @@
     <input id="kbaseTitle" type="text" class="form-control" name="title" value="<%= it.article.title %>" />
     <br/>
     <label class="form-label">Description:</label>
-    <div id="editor"></div>
+    <div id="editor"><%= it.article.html %></div>
     <br />
     <label class="form-label">Tags (separate by space):</label>
     <input id="kbaseTags" type="text" class="form-control" value="<%= it.article.tags %>" />
@@ -41,7 +41,6 @@
         },
         theme: 'snow'
     })
-    quill.root.innerHTML = <%- JSON.stringify(it.article.html) %>
 
     $('#kbaseEditForm').submit(function(e) {
         e.preventDefault()
