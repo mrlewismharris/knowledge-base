@@ -30,7 +30,7 @@
     document.cookie = `${name}=; expires=Thu, 18 Dec 2013 12:00:00 UTC; path=/`
   }
 
-  setCookie("auth", "", )
+  setCookie("auth", "", 0)
 
   $('#loginForm').on('click', function() {
     $('#loginWarning').css('display', 'none')
