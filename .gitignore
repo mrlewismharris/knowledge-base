@@ -2,3 +2,4 @@ node_modules
 .git
 login_info.json
 kbase.json
+knowledge.db

@@ -1,4 +1,4 @@
-const fs = require('fs')
+const db = require('./Database').db
 
 module.exports = {
   authenticate: (data = {}) => {
@@ -14,11 +14,10 @@ module.exports = {
     }
     if (!data.hasOwnProperty('id') || !data.hasOwnProperty('key'))
       return { success: false, msg: "missing id or key" }
-    var creds = JSON.parse(fs.readFileSync('login_info.json'))
-    if (creds.findIndex(x => x.id == data.id) == -1)
+    const row = db.prepare('SELECT key FROM users WHERE id = ?').get(data.id)
+    if (!row)
       return { success: false, msg: "authentication failed" }
-    var foundUser = creds.find(x => x.id == data.id)
-    if (foundUser.key != data.key)
+    if (row.key != data.key)
       return { success: false, msg: "authentication failed" }
     return { success: true }
   }
