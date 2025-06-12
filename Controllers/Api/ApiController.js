@@ -1,5 +1,6 @@
 const crypto = require('crypto')
 const fs = require('fs')
+const bcrypt = require('bcrypt')
 const auth = require.main.require('./Utilities/Auth')
 
 module.exports = {
@@ -105,6 +106,31 @@ module.exports = {
             tags: allTagObjects.sort(x => x.count).slice(0, 50)
         }
     },
+    CreateUser: (data) => {
+        if (!auth.authenticate(data.req).success)
+            return { success: false, msg: 'authentication failed' }
+        data = Object.assign({}, data.req.body)
+        if (!data.username || !data.password)
+            return { success: false, msg: 'username or password missing' }
+        var creds = JSON.parse(fs.readFileSync('login_info.json'))
+        if (creds.find(x => x.username == data.username))
+            return { success: false, msg: 'user already exists' }
+
+        const hashedPassword = bcrypt.hashSync(data.password, 10)
+        var newUser = {
+            id: 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+                var r = Math.random() * 16 | 0, v = c == 'x' ? r : (r & 0x3 | 0x8)
+                return v.toString(16)
+            }),
+            username: data.username,
+            password: hashedPassword,
+            key: ''
+        }
+        creds.push(newUser)
+        fs.writeFileSync('login_info.json', JSON.stringify(creds, null, 2))
+        console.log(`User "${data.username}" created.`)
+        return { success: true, id: newUser.id }
+    },
     AttemptLogin: (data) => {
         data = Object.assign({}, data.req.body)
         //check posted data exists
@@ -119,7 +145,7 @@ module.exports = {
             return { success: false, msg: 'login unsuccessful: wrong username or password' }
         var userCreds = creds.find(x => x.username == data['username'])
         //auth
-        if (data['username'] != userCreds['username'] || data['password'] != userCreds['password'])
+        if (!bcrypt.compareSync(data['password'], userCreds['password']))
             return { success: false, msg: 'login unsuccessful: wrong username or password' }
         
         var newKey = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {

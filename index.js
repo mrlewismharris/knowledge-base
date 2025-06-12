@@ -1,12 +1,14 @@
 const fs = require('fs')
+const bcrypt = require('bcrypt')
 
 if (!fs.existsSync('login_info.json'))
 {
+    const hashed = bcrypt.hashSync('root', 10)
     fs.writeFileSync('login_info.json', JSON.stringify([
         {
             "id": "462dfdc7-645b-40f5-bfbd-502541a9927f",
             "username": "root",
-            "password": "root",
+            "password": hashed,
             "key": ""
         }
     ], null, 2))
