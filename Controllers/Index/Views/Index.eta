@@ -111,6 +111,7 @@
             </div>
         </div>
         `).join(''))
+        const COLLAPSE_HEIGHT = 115
         $('.quill').each(function() {
             $(this).attr('id', 'quillxxxxx'.replace(/[xy]/g, function(c) {
                 var r = Math.random() * 16 | 0, v = c == 'x' ? r : (r & 0x3 | 0x8)
@@ -123,6 +124,10 @@
                 },
                 theme: 'snow'
             }))
+
+            var showButton = this.scrollHeight > COLLAPSE_HEIGHT
+            $(this).toggleClass('collapsed-content', showButton)
+            $(this).siblings('.text-center').toggle(showButton)
         })
     }
 
