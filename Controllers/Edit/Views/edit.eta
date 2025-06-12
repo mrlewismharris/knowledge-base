@@ -1,0 +1,71 @@
+<% layout(`../../Layouts/_Layout.eta`, {
+    title: "Edit Knowledge Base Article",
+}) %>
+<a class="d-inline btn btn-sm btn-secondary" href="/">Go Back</a>
+
+<h3 class="mt-3">Edit knowledge base article</h3>
+
+<form id="kbaseEditForm" method="post" class="mt-3" action="/Api/EditKnowledgeArticle" data-ajax="true" data-success="alert(`success`)">
+    <input id="articleId" type="hidden" value="<%= it.article.id %>" />
+    <label class="form-label">Title:</label>
+    <input id="kbaseTitle" type="text" class="form-control" name="title" value="<%= it.article.title %>" />
+    <br/>
+    <label class="form-label">Description:</label>
+    <div id="editor"><%= it.article.html %></div>
+    <br />
+    <label class="form-label">Tags (separate by space):</label>
+    <input id="kbaseTags" type="text" class="form-control" value="<%= it.article.tags %>" />
+    <br />
+    <div id="formFail" class="alert alert-danger mt-2 text-center" style="display: none"></div>
+    <input type="submit" class="btn btn-primary" />
+</form>
+
+<script>
+    var quill = new Quill('#editor', {
+        modules: {
+            toolbar: [
+            ['bold', 'italic', 'underline', 'strike'],
+            ['blockquote', 'code-block'],
+            [{ 'header': 1 }, { 'header': 2 }],
+            [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+            [{ 'script': 'sub'}, { 'script': 'super' }],
+            [{ 'indent': '-1'}, { 'indent': '+1' }],
+            [{ 'direction': 'rtl' }],
+            [{ 'size': ['small', false, 'large', 'huge'] }],
+            [{ 'header': [1, 2, 3, 4, 5, 6, false] }],
+            [{ 'color': [] }, { 'background': [] }],
+            [{ 'font': [] }],
+            [{ 'align': [] }],
+            ['clean']
+          ]
+        },
+        theme: 'snow'
+    })
+
+    $('#kbaseEditForm').submit(function(e) {
+        e.preventDefault()
+        $.ajax({
+            type: 'POST',
+            url: $(this).prop("action"),
+            data: {
+                id: $('#articleId').val(),
+                title: $('#kbaseTitle').val(),
+                html: quill.root.innerHTML,
+                plainText: quill.getText().replace(`\n`, ''),
+                tags: $('#kbaseTags').val()
+            },
+            success: (data) => {
+                if (data == "success")
+                    window.location = "/"
+                else {
+                    $('#formFail').html(data)
+                    $('#formFail').css('display', 'block')
+                }
+            }
+        })
+    })
+
+    $('#kbaseEditForm').on('click', function() {
+        $('#formFail').css('display', 'none')
+    })
+</script>

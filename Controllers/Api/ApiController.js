@@ -35,6 +35,21 @@ module.exports = {
 
         return "success"
     },
+    EditKnowledgeArticle: (data) => {
+        if (!auth.authenticate(data.req).success)
+            return
+        data = Object.assign({}, data.req.body)
+        if (!data.id)
+            return "Article id missing."
+        if (data.title == '' || data.plainText == '')
+            return "Title or plaintext cannot be empty."
+
+        db.prepare(`UPDATE articles SET title = ?, html = ?, plainText = ?, tags = ? WHERE id = ?`).run(
+            data.title, data.html, data.plainText, data.tags ?? '', data.id
+        )
+
+        return "success"
+    },
     Search: (data) => {
         if (!auth.authenticate(data.req).success)
             return
