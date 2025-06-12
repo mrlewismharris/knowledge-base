@@ -145,27 +145,34 @@
                 id: deleteArticleId
             },
             success: (data) => {
-                if (data == "success")
+                if (data == "success") {
                     getResults($('#kbaseSearch').val())
+                    getMostUsedTags()
+                }
             }
         })
         deleteModal.hide()
     })
 
-    $.ajax({
-        url: `/Api/GetMostUsedTags`,
-        success: (data) => {
-            if (data.tags.length == 0) {
-                $('#tagList').append(`<button type="button" class="tag-button btn btn-secondary btn-sm me-1 py-0 px-1" disabled>No tags</button>`)
-                return
+    function getMostUsedTags() {
+        $.ajax({
+            url: `/Api/GetMostUsedTags`,
+            success: (data) => {
+                $('#tagList').empty()
+                if (data.tags.length == 0) {
+                    $('#tagList').append(`<button type="button" class="tag-button btn btn-secondary btn-sm me-1 py-0 px-1" disabled>No tags</button>`)
+                    return
+                }
+                data.tags.forEach(tag => {
+                    $('#tagList').append(`<button type="button" class="tag-button btn btn-secondary btn-sm me-1 py-0 px-1" data-tag="${tag.name}">${tag.name} (${tag.count})</button>`)
+                })
+                if (data.totalTags > data.tags.length)
+                    $('#tagList').append(`<button type="button" class="tag-button btn btn-secondary btn-sm me-1 py-0 px-1" disabled>${data.totalTags - data.tags.length} more tags...</button>`)
             }
-            data.tags.forEach(tag => {
-                $('#tagList').append(`<button type="button" class="tag-button btn btn-secondary btn-sm me-1 py-0 px-1" data-tag="${tag.name}">${tag.name} (${tag.count})</button>`)
-            })
-            if (data.totalTags > data.tags.length)
-                $('#tagList').append(`<button type="button" class="tag-button btn btn-secondary btn-sm me-1 py-0 px-1" disabled>${data.totalTags - data.tags.length} more tags...</button>`)
-        }
-    })
+        })
+    }
+
+    getMostUsedTags()
 
     $('#tagList, #searchResults').on('click', '.tag-button', function() {
         $('#kbaseSearch').val($('#kbaseSearch').val() != "" ? `${$('#kbaseSearch').val()} ${$(this).data('tag')}` : $(this).data('tag'))
