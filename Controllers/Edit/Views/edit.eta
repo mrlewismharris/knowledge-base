@@ -41,7 +41,7 @@
         },
         theme: 'snow'
     })
-    quill.root.innerHTML = <%= JSON.stringify(it.article.html) %>
+    quill.root.innerHTML = <%- JSON.stringify(it.article.html) %>
 
     $('#kbaseEditForm').submit(function(e) {
         e.preventDefault()
