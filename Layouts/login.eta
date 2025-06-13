@@ -47,7 +47,7 @@
       },
       success: (data) => {
         if (data.success) {
-          setCookie("auth", btoa(JSON.stringify({ id: data.id, key: data.key })))
+          setCookie("auth", btoa(JSON.stringify({ id: data.id, key: data.key })), 7)
           location.reload()
         } else {
           $('#loginWarning').html(data.msg.split('.').map(x => x.charAt(0).toUpperCase() + x.slice(1)).join(","))
