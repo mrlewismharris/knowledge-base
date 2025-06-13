@@ -1,0 +1,28 @@
+<% layout(`../../Layouts/_Layout.eta`, {
+    title: it.article.title
+}) %>
+<a class="d-inline btn btn-sm btn-secondary" href="/">Go Back</a>
+
+<h3 class="mt-3"><%= it.article.title %></h3>
+<p class="d-inline-block">
+    <span style="position:relative; top:2px;">
+        <%= new Date(it.article.created).toLocaleDateString('en-GB') %>
+    </span>
+    <% if (it.article.tags) { %>
+        <% it.article.tags.split(' ').forEach(tag => { %>
+            <span class="badge bg-secondary me-1"><%= tag %></span>
+        <% }) %>
+    <% } %>
+    <a href="/Edit?id=<%= it.article.id %>" class="btn btn-outline-primary btn-sm d-inline-block py-0 ms-1">Edit</a>
+</p>
+<div class="mt-2">
+    <div id="articleContent" class="quill"><%= it.article.html %></div>
+</div>
+
+<script>
+    new Quill('#articleContent', {
+        readOnly: true,
+        modules: { toolbar: false },
+        theme: 'snow'
+    })
+</script>
