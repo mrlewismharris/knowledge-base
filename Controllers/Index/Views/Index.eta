@@ -96,7 +96,7 @@
             return
         }
         $('#searchResults').html(results.map(r => `<div class="card p-3 my-2">
-            <h4>${r.title}</h4>
+            <h4><a href="/View?id=${r.id}">${r.title}</a></h4>
             <p class="d-inline-block"><span style="position:relative; top: 2px;">${new Date(r.created).toLocaleDateString('en-GB')}</span>
                 ${r.tags.length == 0 ? "" : r.tags.split(" ").map(x => `<button type="button" class="tag-button btn btn-outline-secondary btn-sm me-1 py-0 px-1">${x}</button>`).join("")}
                 <a href="/Edit?id=${r.id}" class="btn btn-outline-primary btn-sm d-inline-block py-0 me-1">Edit</a>
