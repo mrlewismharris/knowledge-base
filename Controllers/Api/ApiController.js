@@ -25,12 +25,12 @@ module.exports = {
             var r = Math.random() * 16 | 0, v = c == 'x' ? r : (r & 0x3 | 0x8)
             return v.toString(16)
         })
-        data['date-created'] = new Date()
+        data.created = new Date()
 
         db.prepare(`INSERT INTO articles (id, title, html, plainText, tags, created)` +
             ` VALUES (?, ?, ?, ?, ?, ?)`).run(
                 data.id, data.title, data.html, data.plainText, data.tags ?? '',
-                data['date-created'].toISOString()
+                data.created.toISOString()
             )
 
         return "success"
