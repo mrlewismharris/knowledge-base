@@ -99,7 +99,7 @@ module.exports = {
         rows.forEach(article => {
             (article.tags || '').split(' ').forEach(tag => {
                 if (tag)
-                    allTagStrings.push(tag)
+                    allTagStrings.push(tag.toLowerCase())
             })
         })
         var allTagObjects = []
